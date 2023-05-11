@@ -82,10 +82,7 @@ export default function Nav() {
                 width={280}
                 alt=""
               />
-              {/* <H1LogoName className="flex items-center font-bold text-black dark:text-white hover:no-underline ">
-                Acrópolis
-              </H1LogoName>
-              <span className="text-lg pt-1 text-zinc-500">V1.0</span> */}
+
             </Link>
           </Left>
           <Center>

@@ -4,8 +4,8 @@ import { useToggle } from "../../hooks/useToggle";
 export default function Dropdown(props) {
   const [show, setShow] = useToggle(false);
   return (
-    <div>
-      <div className="z-[129]" onClick={() => setShow(!show)}>{props.button}</div>
+    <div className="z-30">
+      <div className="" onClick={() => setShow(!show)}>{props.button}</div>
       {show && (
         <>
           <div

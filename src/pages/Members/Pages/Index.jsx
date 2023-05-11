@@ -32,6 +32,8 @@ import {
 } from "../../../helpers/Other";
 import ExportExcel from "react-export-excel-xlsx-fix";
 import moment from "moment";
+import ComboboxUnivercel from "../../../univercel-component/combobox";
+import TextFieldUnivercel from "../../../univercel-component/textfield";
 
 const ExcelFile = ExportExcel.ExcelFile;
 const ExcelSheet = ExportExcel.ExcelFile.ExcelSheet;
@@ -45,7 +47,7 @@ export default function Members() {
   const [groups, setGroups] = useState(null);
   const [members, setMembers] = useState(null);
   const [geadquarters, setGeadquarters] = useState(null);
-  const [searchkey, setSearchkey] = useState(null);
+  const [searchkey, setSearchkey] = useState("");
   const [memberPrint, setMemberPrint] = useState(null);
 
   const handlePrintMembers = () => {
@@ -79,12 +81,12 @@ export default function Members() {
   };
 
   const [data, setData] = useState({
-    uidGroup: null,
+    uidGroup: "",
     uidConcept: null,
-    uidGeadquarter: null,
+    uidGeadquarter: "",
     startDate: null,
     endDate: null,
-    statu: null,
+    statu: "",
   });
   const handleChange = (e) => {
     const value = e.target.value;
@@ -204,21 +206,20 @@ export default function Members() {
   }
 
   return (
-    <div className="p-4">
+    <div className="">
       <div>
-        <div className="flex flex-col gap-2 mb-2 ">
-          <h1 className="text-4xl font-bold tracking-tighter text-gray-800  dark:text-zinc-50">
-            Administración de los Miembros
-          </h1>
-          <span className="flex text-sm text-zinc-500 dark:text-zinc-300 ml-1">
-            Registro, actualización, de miembros
-          </span>
-        </div>
-        <div className="bg-white p-4 border rounded-md dark:bg-neutral-800 dark:border-neutral-700 ">
-          <div className="flex gap-1 items-center flex-wrap">
-            <div className="flex h-[40px]">
+        <div className="bg-white dark:bg-neutral-800 relative dark:border-neutral-700 ">
+          <div className="flex flex-col gap-2 px-5 py-1">
+            <h1 className="text-4xl font-bold tracking-tighter text-gray-800  dark:text-zinc-50">
+              Administración de los Miembros
+            </h1>
+            <span className="flex text-base text-zinc-500 dark:text-zinc-300 ml-1">
+              Registro, actualización, de miembros
+            </span>
+          </div>
+          <div className="grid z-20  px-5 dark:bg-neutral-800/40 bg-white/40 backdrop-blur-lg xl:sticky 2xl:sticky w-full top-[56px] py-2 2xl:grid-cols-12 lg:grid-cols-6 xl:grid-cols-10 md:grid-cols-4 sm:grid-cols-1 items-center gap-3">
+            <div className="col-span-2">
               <PrimaryButton
-                width="190px"
                 onClick={() => {
                   setMemberSelected(null);
                   setModalAdd(true);
@@ -232,13 +233,37 @@ export default function Members() {
                     </g>
                   </svg>
                 </span>
-                <span className="text-sm font-semibold">Registrar nuevo</span>
+                <span className="font-semibold">Registrar nuevo</span>
               </PrimaryButton>
             </div>
-            <div className="ml-auto flex items-center flex-wrap gap-2">
-              <div className="text-sm text-neutral-500">filtro:</div>
-              <div>
-                <ReactSelect
+            <div className="col-span-2 2xl:col-span-1">
+              <ComboboxUnivercel
+                name="uidGroup"
+                value={data.uidGroup}
+                placeHolder="Grupo"
+                onChange={handleChange}
+                options={[
+                  {
+                    data: [
+                      {
+                        name: "Todos",
+                        value: data.uidGroup ? "" : "t",
+                      },
+                    ],
+                  },
+                  {
+                    data: groups
+                      ? groups.map((i) => {
+                          return {
+                            name: i.name,
+                            value: i.uid,
+                          };
+                        })
+                      : [],
+                  },
+                ]}
+              />
+              {/* <ReactSelect
                   placeholder="-- Grupo --"
                   styles={{
                     control: (baseStyles, state) => ({
@@ -273,132 +298,84 @@ export default function Members() {
                   }
                   className="react-select-container text-sm w-[150px]"
                   classNamePrefix="react-select"
-                ></ReactSelect>
-              </div>
-              <div className="">
-                <ReactSelect
-                  placeholder="-- Sede --"
-                  styles={{
-                    control: (baseStyles, state) => ({
-                      ...baseStyles,
-                      borderColor: state.isFocused ? "#3170ee" : "#bcbdbe",
-                    }),
-                  }}
-                  onChange={(e) =>
-                    handleChange({
-                      target: {
-                        value: e.value,
-                        name: "uidGeadquarter",
-                      },
-                    })
-                  }
-                  name="uidConcept"
-                  options={
-                    geadquarters &&
-                    [
+                ></ReactSelect> */}
+            </div>
+            <div className="col-span-2 2xl:col-span-3">
+              <ComboboxUnivercel
+                name="uidGeadquarter"
+                value={data.uidGeadquarter}
+                placeHolder="Sede"
+                onChange={handleChange}
+                options={[
+                  {
+                    data: [
                       {
-                        label: "Todos los sedes",
-                        value: "",
+                        name: "Todos",
+                        value: data.uidGeadquarter ? "" : "t",
                       },
-                    ].concat(
-                      geadquarters.map((i) => {
-                        return {
-                          label: i.name,
-                          value: i.uid,
-                        };
-                      })
-                    )
-                  }
-                  className="react-select-container text-sm w-[140px]"
-                  classNamePrefix="react-select"
-                ></ReactSelect>
-              </div>
-              <div className="">
-                <ReactSelect
-                  placeholder="-- Estado --"
-                  styles={{
-                    control: (baseStyles, state) => ({
-                      ...baseStyles,
-                      borderColor: state.isFocused ? "#3170ee" : "#bcbdbe",
-                    }),
-                  }}
-                  onChange={(e) =>
-                    handleChange({
-                      target: {
-                        ...e.target,
-                        value: e.value,
-                        name: "statu",
-                      },
-                    })
-                  }
-                  name="statu"
-                  options={
-                    groups && [
+                    ],
+                  },
+                  {
+                    data: geadquarters
+                      ? geadquarters.map((i) => {
+                          return {
+                            name: i.name,
+                            value: i.uid,
+                          };
+                        })
+                      : [],
+                  },
+                ]}
+              />
+            </div>
+            <div className="col-span-2 2xl:col-span-2">
+              <ComboboxUnivercel
+                name="statu"
+                value={data.statu}
+                placeHolder="Estado"
+                onChange={handleChange}
+                options={[
+                  {
+                    data: [
                       {
-                        label: "Todos lo estados",
-                        value: "",
+                        name: "Todos",
+                        value: data.statu ? "" : "t",
                       },
+                    ],
+                  },
+                  {
+                    data: [
                       {
-                        label: "Activos",
+                        name: "Activos",
                         value: "activos",
                       },
                       {
-                        label: "Inactivos",
+                        name: "Inactivos",
                         value: "inactivos",
                       },
-                    ]
-                  }
-                  className="react-select-container text-sm w-[140px]"
-                  classNamePrefix="react-select"
-                ></ReactSelect>
-              </div>
+                    ],
+                  },
+                ]}
+              />
             </div>
-            <div className="w-[270px]">
+            <div className="col-span-2 2xl:col-span-3">
               <div className="w-full">
-                <div className="relative">
-                  <input
-                    data-toggle="dropdown"
-                    onChange={(e) => setSearchkey(e.target.value)}
-                    value={searchkey ? searchkey : ""}
-                    placeholder="Buscar por DNI o Apellido Paterno"
-                    type="text"
-                    // value={searchkey ? searchkey : ""}
-                    className="px-4 pl-7 text-sm w-full  h-[35px] flex items-center justify-center py-1 outline-none dark:bg-[#7e7e7e36] bg-[#a8a8a836] dark:hover:bg-[#7e7e7e5b] hover:bg-[#a8a8a81a] transition-colors dark:text-[#ffffff] rounded-md"
-                  />
-                  <div className="pointer-events-none w-4 absolute top-[50%] translate-y-[-50%] left-2">
-                    <svg
-                      className="text-[#464545] dark:text-[#949494]"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                    >
-                      <g
-                        style={{
-                          clipPath: "url(#clip0_35_20)",
-                        }}
-                      >
-                        <path
-                          d="M10.8874 0C5.86273 0 1.7748 4.08789 1.7748 9.11258C1.7748 11.2861 2.54012 13.284 3.81496 14.852L0 18.6669L1.33312 20L5.14809 16.185C6.71594 17.4598 8.71387 18.2252 10.8874 18.2252C15.9121 18.2252 20 14.1373 20 9.11258C20 4.08789 15.9121 0 10.8874 0ZM10.8874 16.3398C6.90234 16.3398 3.6602 13.0977 3.6602 9.11258C3.6602 5.1275 6.9023 1.88535 10.8874 1.88535C14.8725 1.88535 18.1146 5.1275 18.1146 9.11258C18.1146 13.0977 14.8725 16.3398 10.8874 16.3398Z"
-                          fill="currentColor"
-                        />
-                      </g>
-                      <defs>
-                        <clipPath id="clip0_35_20">
-                          <rect width="20" height="20" fill="white" />
-                        </clipPath>
-                      </defs>
-                    </svg>
-                  </div>
-                </div>
+                <TextFieldUnivercel
+                  value={searchkey}
+                  onChange={(e) => setSearchkey(e.target.value)}
+                  placeholder="DNI o Apellido Paterno"
+                  type="search"
+                />
               </div>
             </div>
-            <div>
+            <div className="col-span-2 2xl:col-span-1">
               {members && members.length > 0 ? (
                 <ExcelFile
                   filename={`Reporte de Miembros - ${moment()
                     .subtract(10, "days")
                     .calendar()}`}
                   element={
-                    <div className="w-[100px]">
+                    <div className="">
                       <PrimaryButton type="default">
                         <span>
                           <svg
@@ -471,10 +448,10 @@ export default function Members() {
               )}
             </div>
           </div>
-          <div className="mt-2">
+          <div className="mt-2  relative px-3">
             <div className=" w-full rounded-md max-w-full overflow-x-auto">
               <table className="w-full ">
-                <thead className="text-sm  dark:border-b-zinc-700 h-[35px] font-normal">
+                <thead className="text-base  dark:border-b-zinc-700 h-[35px] font-normal">
                   <tr className="border-0  dark:text-zinc-200">
                     <th className="w-[0px]">{members && members.length}</th>
                     <th className="mb-1 p-2 px-3 font-semibold min-w-[180px]">
@@ -506,7 +483,6 @@ export default function Members() {
                     </th>
                   </tr>
                 </thead>
-                {}
                 <tbody>
                   {members &&
                     members.map((member, index) => (
@@ -516,7 +492,7 @@ export default function Members() {
                           setModalAdd(true);
                         }}
                         key={index}
-                        className="cursor-default dark:text-neutral-200 dark:hover:bg-[#3a3a3a] hover:bg-[#b1b4b633]  transition-colors  text-sm "
+                        className="cursor-default dark:text-neutral-200 dark:hover:bg-[#3a3a3a] hover:bg-[#b1b4b633]  transition-colors  text-base "
                       >
                         <td className="px-2 w-[40px] mx-auto text-center  rounded-l-sm">
                           {member.verify && (
@@ -539,7 +515,7 @@ export default function Members() {
                         <td className="py-[8px] px-2 pl-1  relative">
                           <div>
                             <div
-                              className="flex items-center gap-1 text-neutral-900 dark:text-neutral-200 font-semibold h-full"
+                              className="flex items-center  gap-1 text-neutral-900 dark:text-neutral-200 font-semibold h-full"
                               to="/"
                             >
                               {upercasePrimaryLetter(
@@ -660,17 +636,14 @@ export default function Members() {
           </div>
         </div>
       </div>
-      <Modal
-        show={modalAdd}
-        close={() => setModalAdd(!modalAdd)}
-      >
-        <ContentModal width="450px">
-          <BodyModal>
+      <Modal show={modalAdd} close={() => setModalAdd(!modalAdd)}>
+        <ContentModal width="550px">
+          <div className="p-4">
             <FormMember
               data={memberSelected}
               close={() => setModalAdd(!modalAdd)}
             />
-          </BodyModal>
+          </div>
         </ContentModal>
       </Modal>
     </div>

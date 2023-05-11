@@ -18,9 +18,31 @@ import {
   getDataGroupsService,
 } from "../../../services/Data/DataServices";
 import {
+  getMemberByDni,
   saveMemberService,
   updateMemberService,
 } from "../../../services/Member/MemberServices";
+import TextFieldUnivercel from "../../../univercel-component/textfield";
+import ComboboxUnivercel from "../../../univercel-component/combobox";
+
+const days = [
+  {
+    data: [
+      {
+        name: "1",
+        value: "1",
+      },
+      {
+        name: "2",
+        value: "2",
+      },
+      {
+        name: "3",
+        value: "3",
+      },
+    ],
+  },
+];
 
 export default function FormMember(props) {
   const [data, setData] = useObject(
@@ -34,11 +56,11 @@ export default function FormMember(props) {
           observations: "",
           verify: false,
           statu: true,
-          groupUid: null,
+          groupUid: "",
           day: 1,
           month: 1,
           year: 2023,
-          geadquarterUid: null,
+          geadquarterUid: "",
           memberFee: "30.00",
           bookletFee: "2.00",
           celebrationFee: "3.00",
@@ -116,7 +138,6 @@ export default function FormMember(props) {
       setError("year", { type: "custom", message: "Menor de Edad" });
       return;
     }
-
     setLoading(true);
     let geadquartersFinal = null;
     let groupFinal = null;
@@ -130,6 +151,7 @@ export default function FormMember(props) {
         };
       }
     });
+
     groups.forEach((item) => {
       if (item.uid == data.groupUid) {
         groupFinal = {
@@ -179,23 +201,30 @@ export default function FormMember(props) {
         },
       });
     } else {
-      newData = {
-        ...newData,
-        created_at: FormatDate(),
-        created_user: userData.uid,
-      };
-      await saveMemberService(newData, userData);
-      toast.success("Miembro Agregado", {
-        style: {
-          padding: "7px",
-          paddingLeft: "10px",
-          color: "#713200",
-        },
-        iconTheme: {
-          primary: "#713200",
-          secondary: "#FFFAEE",
-        },
-      });
+      // if member no exist
+      if (await getMemberByDni(data.dni)) {
+        newData = {
+          ...newData,
+          created_at: FormatDate(),
+          created_user: userData.uid,
+        };
+        await saveMemberService(newData, userData);
+        toast.success("Miembro Agregado", {
+          style: {
+            padding: "7px",
+            paddingLeft: "10px",
+            color: "#713200",
+          },
+          iconTheme: {
+            primary: "#713200",
+            secondary: "#FFFAEE",
+          },
+        });
+      } else {
+        alert("EL miembro con el dni asignado ya se encuentra registrado");
+        setLoading(false);
+        return;
+      }
     }
 
     setLoading(false);
@@ -219,53 +248,36 @@ export default function FormMember(props) {
   }
 
   // handle get client axios
-  async function getClient(num) {
-    const options = {
-      method: "GET",
-      url: "https://www.apisperu.net/api/dni/" + num,
+  async function getClientSunat() {
+    const number = data.dni;
+
+    const axiosConfig = {
       headers: {
-        Authorization:
-          "Bearer c7c81f1bbf1836d1903b37dc6d2feb46d5960fb73824d259040c35f3ba9b5b7b",
-        // "token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImRhdXN0aW5ubUBnbWFpbC5jb20ifQ.7ogP6TlyZMkl2eT4Ok9HG7sBb06i6M1vctlipW5LH_M"
+        Authorization: `Bearer ${import.meta.env.VITE_TOKEN_QUERIES_UNIVERCEL}`,
       },
     };
-    const res = await axios.request(options);
-    setLoadingRuc(false);
-    return res.data;
-  }
-  const handleRucSearsh = async (e) => {
-    const pattern = /^[0-9,$]*$/;
 
-    const dni = e.target.value;
-    setData({ ...data, verify: false, dni: e.target.value });
-    if (dni.trim().length === 8 && pattern.test(dni)) {
-      setLoadingRuc(true);
-      try {
-        const result = await getClient(dni);
-        if (result.success) {
-          setData({
-            ...data,
-            names: result.data.nombres,
-            lastName: result.data.apellido_paterno,
-            motherLastName: result.data.apellido_materno,
-            verify: true,
-            dni: dni,
-          });
-          setValue("names", result.data.nombres);
-          setValue("lastName", result.data.apellido_paterno);
-          setValue("motherLastName", result.data.apellido_materno);
-          clearErrors("names");
-          clearErrors("lastName");
-          clearErrors("motherLastName");
-        } else {
-        }
-        setLoadingRuc(false);
-      } catch (error) {
-        setLoadingRuc(false);
-        console.log(error);
-      }
+    const response = await axios.get(
+      `https://api.univercel.com.pe/queries/dni?number=` + number,
+      axiosConfig
+    );
+
+    const dataUnivercel = response.data;
+    if (dataUnivercel.status) {
+      setData({
+        ...data,
+        names: dataUnivercel.credentials.nombres,
+        lastName: dataUnivercel.credentials.apellidoPaterno,
+        motherLastName: dataUnivercel.credentials.apellidoMaterno,
+      });
+      setValue("names", dataUnivercel.credentials.nombres);
+      setValue("lastName", dataUnivercel.credentials.apellidoPaterno);
+      setValue("motherLastName", dataUnivercel.credentials.apellidoMaterno);
+    } else {
+      clearErrors();
     }
-  };
+  }
+
   const changeYouger = (e) => {
     if (e.target.checked) {
       unregister("attorney");
@@ -284,9 +296,15 @@ export default function FormMember(props) {
   useEffect(() => {
     getDataGroupsService(setGroups);
     getDataGeadquartersService(setGeadquarters);
-    register("groupUid", { required: true });
-    register("geadquarterUid", { required: true });
+    // register("groupUid", { required: true });
+    // register("geadquarterUid", { required: true });
   }, []);
+
+  useEffect(() => {
+    if (data.dni.length === 8) {
+      getClientSunat();
+    }
+  }, [data.dni]);
 
   useEffect(() => {
     let memberFee = null;
@@ -305,7 +323,6 @@ export default function FormMember(props) {
     });
   }, [data.year]);
 
-  
   useEffect(() => {
     const bookletFee = parseFloat(data.bookletFee);
     const celebrationFee = parseFloat(data.celebrationFee);
@@ -320,11 +337,11 @@ export default function FormMember(props) {
   }, [data.bookletFee, data.celebrationFee, , data.memberFee]);
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex flex-col pb-2">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col ">
         <div className="flex items-center">
-          <h1 className="mr-auto leading-8 text-2xl font-bold tracking-tight dark:text-neutral-200">
-            {props.data ? " Actualizar" : " Registrar"}
+          <h1 className="mr-auto leading-8 text-2xl text-neutral-800 font-bold tracking-tight dark:text-neutral-200">
+            {props.data ? " Actualizar" : " Registrar miembro"}
           </h1>
           <div>
             <EclipseButton
@@ -349,100 +366,13 @@ export default function FormMember(props) {
             />
           </div>
         </div>
-        <span className="leading-4 flex mt-1 text-xs dark:text-neutral-400">
-          Los datos como el usuario, la fecha, y algunas informaciones del
-          navegador utilizado seran guardados por seguridad.
-        </span>
       </div>
-      <div className="flex items-center gap-1 pb-2">
-        <div className="relative flex max-w-max">
-          <div className="w-[35px] h-[35px] rounded-full border overflow-hidden">
-            <img
-              className="object-cover w-full h-full"
-              src={userData.photoUrl}
-              alt=""
-            />
-          </div>
-          <div className="absolute bottom-0 right-1">
-            {userData.providerId.split(".")[0] === "facebook" ? (
-              <div className="w-4">
-                <svg viewBox="0 0 32 32" fill="none">
-                  <g id="SVGRepo_iconCarrier">
-                    <circle
-                      cx="16"
-                      cy="16"
-                      r="14"
-                      fill="url(#paint0_linear_87_7208)"
-                    ></circle>
-                    <path
-                      d="M21.2137 20.2816L21.8356 16.3301H17.9452V13.767C17.9452 12.6857 18.4877 11.6311 20.2302 11.6311H22V8.26699C22 8.26699 20.3945 8 18.8603 8C15.6548 8 13.5617 9.89294 13.5617 13.3184V16.3301H10V20.2816H13.5617V29.8345C14.2767 29.944 15.0082 30 15.7534 30C16.4986 30 17.2302 29.944 17.9452 29.8345V20.2816H21.2137Z"
-                      fill="white"
-                    ></path>
-                    <defs>
-                      <linearGradient
-                        id="paint0_linear_87_7208"
-                        x1="16"
-                        y1="2"
-                        x2="16"
-                        y2="29.917"
-                        gradientUnits="userSpaceOnUse"
-                      >
-                        <stop
-                          style={{
-                            stopColor: "#0163E0",
-                          }}
-                        ></stop>
-                        <stop
-                          offset="1"
-                          style={{
-                            stopColor: "#0163E0",
-                          }}
-                        ></stop>
-                      </linearGradient>
-                    </defs>
-                  </g>
-                </svg>
-              </div>
-            ) : userData.providerId.split(".")[0] === "google" ? (
-              <div className="w-4 bg-white rounded-full">
-                <svg viewBox="0 0 16 16" fill="none">
-                  <path
-                    fill="#4285F4"
-                    d="M14.9 8.161c0-.476-.039-.954-.121-1.422h-6.64v2.695h3.802a3.24 3.24 0 01-1.407 2.127v1.75h2.269c1.332-1.22 2.097-3.02 2.097-5.15z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M8.14 15c1.898 0 3.499-.62 4.665-1.69l-2.268-1.749c-.631.427-1.446.669-2.395.669-1.836 0-3.393-1.232-3.952-2.888H1.85v1.803A7.044 7.044 0 008.14 15z"
-                  />
-                  <path
-                    fill="#FBBC04"
-                    d="M4.187 9.342a4.17 4.17 0 010-2.68V4.859H1.849a6.97 6.97 0 000 6.286l2.338-1.803z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M8.14 3.77a3.837 3.837 0 012.7 1.05l2.01-1.999a6.786 6.786 0 00-4.71-1.82 7.042 7.042 0 00-6.29 3.858L4.186 6.66c.556-1.658 2.116-2.89 3.952-2.89z"
-                  />
-                </svg>
-              </div>
-            ) : null}
-          </div>
-        </div>
-        <div className=" font-semibold text-sm flex flex-col dark:text-white">
-          <span>{userData.name}</span>
-          <span className="leading-3 text-xs font-normal dark:text-neutral-400 ">
-            {moment().format("LL")}
-          </span>
-        </div>
-      </div>
-      <div className="flex gap-1">
-        <div className="w-40">
-          <TextField
+      <div className="grid grid-cols-12 gap-3">
+        <div className="col-span-12">
+          {/* <TextField
             autoFocus
             // info={<>DNI</>}
-            requiredName="Ingrese un Dni"
-            patternName={`El dni "${data.dni}" es invalido, se acepta solo numeros`}
-            maxLengthName="No puede contener mas de 8 caracteres"
-            minLengthName="Debe contener 8 caracteres"
+
             type="text"
             placeholder="N° Identificiación"
             // long
@@ -460,10 +390,28 @@ export default function FormMember(props) {
               maxLength: 8,
               minLength: 8,
             }}
+          /> */}
+          <TextFieldUnivercel
+            onChange={handleChange}
+            placeholder="DNI"
+            name="dni"
+            requiredName="Ingrese un Dni"
+            patternName={`El dni "${data.dni}" es invalido, se acepta solo numeros`}
+            maxLengthName="No puede contener mas de 8 caracteres"
+            minLengthName="Debe contener 8 caracteres"
+            control={control}
+            error={errors.dni}
+            value={data.dni}
+            rules={{
+              pattern: /^[0-9,$]*$/,
+              required: true,
+              maxLength: 8,
+              minLength: 8,
+            }}
           />
         </div>
-        <div className="w-80">
-          <TextField
+        <div className="col-span-12">
+          {/* <TextField
             // info={"Nombres"}
             requiredName="Ingrese los nombres"
             patternName="Solo letras y espacios"
@@ -480,12 +428,27 @@ export default function FormMember(props) {
               pattern:
                 /^[a-zA-ZÀ-ÿ\u00f1\u00d1]+(\s*[a-zA-ZÀ-ÿ\u00f1\u00d1]*)*[a-zA-ZÀ-ÿ\u00f1\u00d1]+$/g,
             }}
+          /> */}
+          <TextFieldUnivercel
+            onChange={handleChange}
+            placeholder="Nombres"
+            name="names"
+            requiredName="Ingrese los nombres"
+            patternName="Solo letras y espacios"
+            control={control}
+            error={errors.names}
+            value={data.names}
+            rules={{
+              required: true,
+              pattern:
+                /^[a-zA-ZÀ-ÿ\u00f1\u00d1]+(\s*[a-zA-ZÀ-ÿ\u00f1\u00d1]*)*[a-zA-ZÀ-ÿ\u00f1\u00d1]+$/g,
+            }}
           />
         </div>
       </div>
-      <div className="flex gap-1">
-        <div className="w-full">
-          <TextField
+      <div className="grid grid-cols-12 gap-3">
+        <div className="col-span-4">
+          {/* <TextField
             // info={"Apellido Paterno"}
             requiredName="Ingrese el apellido paterno"
             patternName="El apellido solo debe contener letras"
@@ -502,10 +465,25 @@ export default function FormMember(props) {
               pattern:
                 /^[a-zA-ZÀ-ÿ\u00f1\u00d1]+(\s*[a-zA-ZÀ-ÿ\u00f1\u00d1]*)*[a-zA-ZÀ-ÿ\u00f1\u00d1]+$/g,
             }}
+          /> */}
+          <TextFieldUnivercel
+            onChange={handleChange}
+            name="lastName"
+            requiredName="Ingrese el apellido paterno"
+            patternName="El apellido solo debe contener letras"
+            placeholder="Apellido Paterno"
+            control={control}
+            error={errors.lastName}
+            value={data.lastName}
+            rules={{
+              required: true,
+              pattern:
+                /^[a-zA-ZÀ-ÿ\u00f1\u00d1]+(\s*[a-zA-ZÀ-ÿ\u00f1\u00d1]*)*[a-zA-ZÀ-ÿ\u00f1\u00d1]+$/g,
+            }}
           />
         </div>
-        <div className="w-full">
-          <TextField
+        <div className="col-span-4">
+          {/* <TextField
             // info={"Apellido Materno"}
             requiredName="Ingrese el apellido materno"
             patternName="El apellido solo debe contener letras"
@@ -522,10 +500,25 @@ export default function FormMember(props) {
               pattern:
                 /^[a-zA-ZÀ-ÿ\u00f1\u00d1]+(\s*[a-zA-ZÀ-ÿ\u00f1\u00d1]*)*[a-zA-ZÀ-ÿ\u00f1\u00d1]+$/g,
             }}
+          /> */}
+          <TextFieldUnivercel
+            onChange={handleChange}
+            placeholder="Apellido Materno"
+            name="motherLastName"
+            requiredName="Ingrese el apellido materno"
+            patternName="El apellido solo debe contener letras"
+            control={control}
+            error={errors.motherLastName}
+            value={data.motherLastName}
+            rules={{
+              required: true,
+              pattern:
+                /^[a-zA-ZÀ-ÿ\u00f1\u00d1]+(\s*[a-zA-ZÀ-ÿ\u00f1\u00d1]*)*[a-zA-ZÀ-ÿ\u00f1\u00d1]+$/g,
+            }}
           />
         </div>
-        <div className="w-full">
-          <TextField
+        <div className="col-span-4">
+          {/* <TextField
             // info={"Numero de telefono"}
             patternName="Invalido"
             placeholder="Celular (Opcional)"
@@ -540,100 +533,93 @@ export default function FormMember(props) {
             rules={{
               pattern: /^[0-9,$]*$/,
             }}
+          /> */}
+          <TextFieldUnivercel
+            onChange={handleChange}
+            placeholder="Celular (Opcional)"
+            name="phone"
+            patternName="Invalido"
+            control={control}
+            error={errors.phone}
+            value={data.phone}
+            rules={{
+              pattern: /^[0-9,$]*$/,
+            }}
           />
         </div>
       </div>
-      <div className=" ">
-        <div className="mb-1">
-          <span className="dark:text-zinc-400 text-xs">
-            Fecha de nacimiento
-          </span>
+      <div>
+        <div className="text-neutral-400 text-sm p-1">
+          <span>Fecha de nacimiento</span>
         </div>
-        <div className="flex gap-2">
-          <div className="w-full">
-            <Combobox
+        <div className="grid grid-cols-12 gap-3 ">
+          <div className="col-span-4">
+            <ComboboxUnivercel
               onChange={handleChange}
-              // long
-              info="Dia"
               error={errors.day}
+              control={control}
+              placeHolder="Dia"
+              options={[
+                {
+                  data: days.map((day) => {
+                    return {
+                      name: day,
+                      value: day,
+                    };
+                  }),
+                },
+              ]}
+              value={parseInt(data.day)}
               name="day"
-              control={control}
-            >
-              {days.map((item, index) => {
-                return (
-                  <option
-                    className="font-semibold text-xs"
-                    key={index}
-                    value={item}
-                  >
-                    {item}
-                  </option>
-                );
-              })}
-            </Combobox>
+            />
+            {console.log(data.day)}
           </div>
-          <div className="w-full">
-            <Combobox
+          <div className="col-span-4">
+            <ComboboxUnivercel
               onChange={handleChange}
-              // long
-              info="Mes"
-              error={errors.day}
+              error={errors.month}
+              control={control}
+              placeHolder="Mes"
+              options={[
+                {
+                  data: monthsDate.map((month, index) => {
+                    return {
+                      name: month,
+                      value: index + 1,
+                    };
+                  }),
+                },
+              ]}
+              value={parseInt(data.month)}
               name="month"
-              control={control}
-            >
-              {monthsDate.map((item, index) => {
-                return (
-                  <option
-                    className="font-semibold text-xs"
-                    key={index}
-                    value={index + 1}
-                  >
-                    {item}
-                  </option>
-                );
-              })}
-            </Combobox>
+            />
           </div>
-          <div className="w-full">
-            <Combobox
+          <div className="col-span-4">
+            <ComboboxUnivercel
               onChange={handleChange}
-              minName="Tienes que ser mayor de edad"
-              // long
-              info="Año"
-              value={data.year}
               error={errors.year}
-              name="year"
               control={control}
-            >
-              {years.map((item, index) => {
-                return (
-                  <option
-                    className="font-semibold text-xs"
-                    key={index}
-                    value={item}
-                  >
-                    {item}
-                  </option>
-                );
-              })}
-            </Combobox>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <div className="w-full pl-1 py-1">
-            <CheckBox
-              text={"Miembro menor de edad"}
-              onChange={(e) => {
-                setData({ ...data, younger: e.target.checked });
-                changeYouger(e);
-              }}
-              checked={data.younger}
+              placeHolder="Año"
+              options={[
+                {
+                  data: years.map((year) => {
+                    return {
+                      name: year,
+                      value: year,
+                    };
+                  }),
+                },
+              ]}
+              minName="Tienes que ser mayor de edad"
+              value={parseInt(data.year)}
+              name="year"
             />
           </div>
         </div>
-        {data.younger && (
-          <div className="py-2 w-full">
-            <TextField
+      </div>
+      {data.younger && (
+        <div className="py-2 col-span-6">
+          {/* <TextField
               // info={"Apoderado"}
               requiredName="Ingrese los nombres del apoderado"
               patternName="El apellido solo debe contener letras"
@@ -650,11 +636,94 @@ export default function FormMember(props) {
                 pattern:
                   /^[a-zA-ZÀ-ÿ\u00f1\u00d1]+(\s*[a-zA-ZÀ-ÿ\u00f1\u00d1]*)*[a-zA-ZÀ-ÿ\u00f1\u00d1]+$/g,
               }}
+            /> */}
+          <TextFieldUnivercel
+            onChange={handleChange}
+            name="attorney"
+            requiredName="Ingrese los nombres del apoderado"
+            patternName="El apellido solo debe contener letras"
+            placeholder="Apoderado"
+            control={control}
+            error={errors.attorney}
+            value={data.attorney}
+            rules={{
+              required: true,
+              pattern:
+                /^[a-zA-ZÀ-ÿ\u00f1\u00d1]+(\s*[a-zA-ZÀ-ÿ\u00f1\u00d1]*)*[a-zA-ZÀ-ÿ\u00f1\u00d1]+$/g,
+            }}
+          />
+        </div>
+      )}
+      <div className="grid grid-cols-12 gap-3 ">
+        <div className="flex col-span-6 gap-2">
+          <div className="w-full pl-1 py-1">
+            <CheckBox
+              text={"Miembro menor de edad"}
+              onChange={(e) => {
+                setData({ ...data, younger: e.target.checked });
+                changeYouger(e);
+              }}
+              checked={data.younger}
             />
           </div>
-        )}
+        </div>
       </div>
-      <div className="flex gap-2">
+      <div className="grid grid-cols-12 gap-3">
+        <div className="col-span-4">
+          <ComboboxUnivercel
+            onChange={handleChange}
+            error={errors.groupUid}
+            requiredName="Selecciona un grupo"
+            control={control}
+            placeHolder="Grupo"
+            options={[
+              {
+                data: groups
+                  ? groups?.map((group) => {
+                      return {
+                        name: group.name,
+                        value: group.uid,
+                      };
+                    })
+                  : [],
+              },
+            ]}
+            value={data.groupUid}
+            name="groupUid"
+            rules={{
+              required: true,
+            }}
+          />
+        </div>
+        <div className="col-span-8">
+          <ComboboxUnivercel
+            onChange={handleChange}
+            error={errors.groupUid}
+            control={control}
+            placeHolder="Sede"
+            requiredName="Selecciona una sede"
+            options={[
+              {
+                data: geadquarters
+                  ? geadquarters?.map((item) => {
+                      return {
+                        name: item.name,
+                        value: item.uid,
+                        disabled: !item.statu,
+                      };
+                    })
+                  : [],
+              },
+            ]}
+            value={data.geadquarterUid}
+            name="geadquarterUid"
+            rules={{
+              required: true,
+            }}
+          />
+        </div>
+      </div>
+      {/* <div className="flex gap-2">
         <div className="w-60">
           <h2
             className={`pb-2 ${
@@ -790,29 +859,39 @@ export default function FormMember(props) {
             </div>
           </div>
         </div>
+      </div> */}
+      <div className="grid grid-cols-12 gap-3">
+        <div className="col-span-6">
+          <TextFieldUnivercel
+            onChange={handleChange}
+            name="entryDate"
+            placeholder="Fecha de entrada"
+            requiredName="Ingrese la fecha de entrada"
+            control={control}
+            error={errors.entryDate}
+            type="date"
+            value={data.entryDate}
+          />
+        </div>
+        <div className="col-span-6">
+          <TextFieldUnivercel
+            onChange={handleChange}
+            name="dischargeDate"
+            placeholder="Fecha de baja"
+            control={control}
+            error={errors.dischargeDate}
+            type="date"
+            value={data.dischargeDate}
+          />
+        </div>
       </div>
-      <div className=" my-2">
+      {/* <div className=" my-2">
         <div className="flex gap-2">
-          <div className="w-full">
-            <TextField
-              info={"Fecha de entrada"}
-              requiredName="Ingrese la fecha de entrada"
-              type="date"
-              long
-              onChange={handleChange}
-              value={data.entryDate}
-              error={errors.entryDate}
-              control={control}
-              name="entryDate"
-              rules={{
-                required: true,
-              }}
-            />
-          </div>
+
+
           <div className="w-full">
             <TextField
               info={"Fecha de baja"}
-              requiredName="Ingrese la fecha de baja"
               type="date"
               long
               onChange={handleChange}
@@ -820,20 +899,78 @@ export default function FormMember(props) {
               error={errors.dischargeDate}
               control={control}
               name="dischargeDate"
+            />
+          </div>
+        </div>
+      </div> */}
+      <div className=" gap-2">
+        <div className=" w-full  mb-2">
+          <h3 className="dark:text-zinc-100 text-xl tracking-tight font-semibold pl-1">
+            Gestión de cuotas y pagos
+          </h3>
+        </div>
+        <div className="grid grid-cols-12 gap-3">
+          <div className="col-span-4">
+            <TextFieldUnivercel
+              name="memberFee"
+              placeholder="Cuota miembro"
+              requiredName="La cuota es obligatorio"
+              minName={`La cuota minima es S/${
+                isYear(data.year) < 26 ? 30.0 : 40.0
+              }`}
+              onChange={handleChange}
+              onBlur={handleOnBlur}
+              type="money"
+              control={control}
+              error={errors.memberFee}
+              value={data.memberFee}
               rules={{
                 required: true,
+                min: isYear(data.year) < 26 ? 30 : 40,
+                pattern: /^(0|[1-9][0-9]{0,2})(,\d{3})*(\.\d{1,2})?$/,
+              }}
+            />
+          </div>
+          <div className="col-span-4">
+            <TextFieldUnivercel
+              name="bookletFee"
+              placeholder="Cuota Librito"
+              requiredName="La cuota es obligatorio"
+              minName="La cuota minima es S/ 2.00"
+              onChange={handleChange}
+              onBlur={handleOnBlur}
+              type="money"
+              control={control}
+              error={errors.bookletFee}
+              value={data.bookletFee}
+              rules={{
+                required: true,
+                min: 2,
+                pattern: /^(0|[1-9][0-9]{0,2})(,\d{3})*(\.\d{1,2})?$/,
+              }}
+            />
+          </div>
+          <div className="col-span-4">
+            <TextFieldUnivercel
+              name="celebrationFee"
+              placeholder="Cuota Celebración"
+              requiredName="La cuota es obligatorio"
+              minName="La cuota minima es S/3.00"
+              onChange={handleChange}
+              onBlur={handleOnBlur}
+              type="money"
+              control={control}
+              error={errors.celebrationFee}
+              value={data.celebrationFee}
+              rules={{
+                min: 3,
+                required: true,
+                pattern: /^(0|[1-9][0-9]{0,2})(,\d{3})*(\.\d{1,2})?$/,
               }}
             />
           </div>
         </div>
-      </div>
-      <div className=" gap-2">
-        <div className="border-t w-full pt-[6px] dark:border-t-zinc-600 mb-2">
-          <h3 className="dark:text-zinc-100 text-sm font-semibold pl-1">
-            Gestión de cuotas y pagos
-          </h3>
-        </div>
-        <div>
+        {/* <div>
           <div className="flex gap-2">
             <div className="w-full">
               <TextField
@@ -907,9 +1044,23 @@ export default function FormMember(props) {
               />
             </div>
           </div>
+        </div> */}
+      </div>
+      <div className="grid grid-cols-12">
+        <div className="col-span-12">
+          <TextFieldUnivercel
+            name="observations"
+            placeholder="Observaciones"
+            onChange={handleChange}
+            onBlur={handleOnBlur}
+            multiple
+            control={control}
+            error={errors.observations}
+            value={data.observations}
+          />
         </div>
       </div>
-      <div className=" gap-2 mt-3">
+      {/* <div className=" gap-2 mt-3">
         <div>
           <div className="flex gap-2">
             <div className="w-full">
@@ -929,10 +1080,10 @@ export default function FormMember(props) {
             </div>
           </div>
         </div>
-      </div>
-      <div className="flex gap-2 dark:text-white pt-2">
-        <span className="dark:text-zinc-400 text-xs">Cuota mensual</span>
-        <span className="font-semibold text-sm">
+      </div> */}
+      <div className="flex items-center gap-2 dark:text-white text-base">
+        <span className="dark:text-zinc-400 ">Cuota mensual</span>
+        <span className="text-xl">
           S/ {!data.totalFee.isNaN && data.totalFee}
         </span>
       </div>
@@ -955,7 +1106,7 @@ export default function FormMember(props) {
         </PrimaryButton>
       </div>
       {loading && (
-        <div className="absolute top-0 left-0 w-full h-full bg-[rgba(255,255,255,.5)] dark:bg-[rgba(6,7,7,0.5)]">
+        <div className="absolute top-0 left-0 w-full h-full bg-[rgba(255,255,255,.5)] dark:bg-neutral-700/50 rounded-xl">
           <div className="w-full h-full flex items-center justify-center">
             <Rotation width="60px" height="60px" />
           </div>

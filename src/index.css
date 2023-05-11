@@ -79,41 +79,36 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   overflow: overlay;
 }
 
-
-.react-select-container .react-select__control{
+.react-select-container .react-select__control {
   min-height: 35px !important;
   max-height: 35px !important;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
 }
-.react-select__value-container{
+.react-select__value-container {
   height: 35px;
   margin-top: -1px;
 }
-.react-select__menu{
+.react-select__menu {
   padding: 2px;
   margin: 0 !important;
 }
-.react-select__menu-list{
+.react-select__menu-list {
   margin: 0 !important;
   padding: 0 !important;
 }
-.react-select__option{
+.react-select__option {
   border-radius: 5px;
   font-size: 13px !important;
   padding: 5px 10px !important;
   cursor: pointe !important;
   font-weight: 400;
 }
-.react-select__indicator-separator{
+.react-select__indicator-separator {
   width: 0px !important;
 }
 
-
-
 input {
   outline: none;
-
 }
-

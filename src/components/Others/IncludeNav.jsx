@@ -12,7 +12,7 @@ export default function IncludeNav(props) {
         <AsideContainer
           onClick={ChangeMenu}
           id="containerMenuAside"
-          className="border-r dark:border-r-[#353636] bg-white dark:bg-[#242526] w-[300px] fixed top-[54px]"
+          className="border-r dark:border-r-[#353636] bg-white dark:bg-[#242526] w-[300px] fixed top-[54px] z-30"
         >
           <Aside />
         </AsideContainer>
@@ -31,7 +31,6 @@ const AsideContainer = styled.div`
   min-width: 300px;
   max-width: 300px;
   bottom: 0;
-  z-index: 100;
   overflow-y: auto;
   &::-webkit-scrollbar {
     width: 10px !important;

@@ -52,7 +52,7 @@ export default function CheckBox(props) {
             </div>
           </div>
           {props.text && (
-            <div className={`font-normal flex items-center text-xs ${props.checked ? " text-green-700 dark:text-green-500" : "text-zinc-800 dark:text-zinc-400"}`}>
+            <div className={`font-normal flex items-center text-base ${props.checked ? " text-green-700 dark:text-green-500" : "text-zinc-800 dark:text-zinc-400"}`}>
               <span>{props.text}</span>
             </div>
           )}

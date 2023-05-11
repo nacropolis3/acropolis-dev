@@ -49,7 +49,7 @@ export default function Nav() {
   };
 
   return (
-    <Container className="w-full top-0 border-b bg-[#ffffff] dark:border-b-[#353636] px-[9px] py-[7px]  dark:bg-[#242526] sticky">
+    <Container className="w-full z-30 top-0 border-b bg-[#ffffff] dark:border-b-[#353636] px-[9px] py-[7px]  dark:bg-[#242526] sticky">
       <div className="">
         <div className="flex w-full gap-5">
           <Left>
@@ -249,7 +249,6 @@ const IconSearsh = styled.div`
 `;
 const Container = styled.div`
   backdrop-filter: blur(10px);
-  z-index: 90;
 `;
 const Left = styled.div`
   margin-right: auto;

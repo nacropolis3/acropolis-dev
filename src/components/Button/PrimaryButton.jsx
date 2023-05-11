@@ -29,7 +29,7 @@ export default function PrimaryButton(props) {
           tooltip={props.tooltip ? props.tooltip : null}
           onKeyDown={!disabled && !props.loading ? onClick : null}
           onClick={!disabled && !props.loading ? onClick : null}
-          className={`h-[36px] flex gap-1 items-center font-semibold justify-center  ${
+          className={`h-[43px] flex gap-1 items-center font-semibold justify-center  ${
             type && type
           } ${disabled || props.loading ? "disable-button" : ""} ${
             size ? size : ""
@@ -38,7 +38,7 @@ export default function PrimaryButton(props) {
             "bg-[#d4504c46] text-[#ff6767] hover:bg-[#d4504c69] hover:text-[#ff6767]"
           } ${
             props.type === "default" &&
-            "dark:bg-transparent border dark:border-neutral-700 hover:dark:bg-neutral-800 dark:text-neutral-50 bg-[#ffffff] border-[#d3d5d6] text-[#151516] hover:bg-[#ecedf0]"
+            "dark:bg-transparent border text-base dark:border-neutral-700 hover:dark:bg-neutral-800 dark:text-neutral-50 bg-[#ffffff] border-[#d3d5d6] text-[#151516] hover:bg-[#ecedf0]"
           }  `}
         >
           {props.loading ? (
@@ -76,7 +76,6 @@ const ContainerButton = styled.div`
   div {
     display: flex;
     justify-content: center;
-    font-size: 14px;
     transition: 0.1s;
     border-radius: 6px;
     -webkit-user-select: none;

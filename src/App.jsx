@@ -11,6 +11,7 @@ function App() {
   return (
     <div className="min-h-[100vh] dark:bg-[#18191a] ">
       <RouteApp />
+      <div id="menu-component-container" className=""></div>
       <div className="" id="modal"></div>
       <div id="PDFContainer"></div>
       <div className="w-full h-full relative pointer-events-none" id="contextmenu"></div>

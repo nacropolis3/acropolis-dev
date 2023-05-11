@@ -18,7 +18,6 @@ export async function saveMemberService(member, user) {
   const uid = uuidv4();
   try {
     await setDoc(doc(db, "members", uid), member);
-
     await saveActivitieService({
       module: "Miembros",
       action: {
@@ -77,6 +76,17 @@ export function getMemberService(setData, uid) {
   });
 
   return () => unsubscribe();
+}
+
+export async function getMemberByDni(dni) {
+  const q = query(collection(db, "members"), where("dni", "==", dni));
+
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.empty) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 export function getMembersServiceSearsh(setData, conditions) {
